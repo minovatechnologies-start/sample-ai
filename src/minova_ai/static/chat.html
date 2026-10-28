@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131b">
+  <title>Minova AI — Chat</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #10131b;
+      color: #edf0f7;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .app { width: min(940px, 100%); height: min(820px, calc(100vh - 48px)); min-height: 540px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #292e3b; border-radius: 20px; background: #171b25; box-shadow: 0 24px 80px #0006; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; border-bottom: 1px solid #292e3b; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .mark { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 13px; background: linear-gradient(135deg, #7d72ff, #44c7b7); color: #10131b; font-weight: 900; }
+    h1 { margin: 0; font-size: 16px; letter-spacing: .01em; }
+    .subtitle { margin: 4px 0 0; color: #979fb1; font-size: 12px; }
+    .status { display: flex; align-items: center; gap: 8px; color: #aab1c0; font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #e6ac58; }
+    .dot.ready { background: #54d6a1; }
+    .dot.error { background: #ef747e; }
+    .settings { display: grid; grid-template-columns: minmax(180px, 1fr) 170px 190px 110px; gap: 10px; padding: 14px 24px; border-bottom: 1px solid #292e3b; background: #141821; }
+    label { display: grid; gap: 6px; min-width: 0; color: #979fb1; font-size: 11px; font-weight: 600; }
+    input, select, textarea, button { font: inherit; }
+    input, select, textarea { width: 100%; border: 1px solid #343a49; border-radius: 9px; outline: none; background: #1c212c; color: #edf0f7; }
+    input, select { height: 38px; padding: 0 10px; font-size: 12px; }
+    input:focus, select:focus, textarea:focus { border-color: #837aff; box-shadow: 0 0 0 3px #837aff24; }
+    main { flex: 1; min-height: 0; overflow-y: auto; padding: 24px; }
+    .welcome { display: grid; min-height: 100%; place-content: center; justify-items: center; text-align: center; }
+    .welcome-icon { display: grid; width: 56px; height: 56px; place-items: center; margin-bottom: 16px; border: 1px solid #39364e; border-radius: 18px; background: #242135; color: #b7adff; font-size: 24px; }
+    .welcome h2 { margin: 0 0 8px; font-size: 21px; }
+    .welcome p { max-width: 420px; margin: 0; color: #979fb1; font-size: 13px; line-height: 1.6; }
+    .messages { display: grid; gap: 18px; }
+    .message { display: flex; align-items: flex-start; gap: 10px; max-width: 88%; }
+    .message.user { justify-self: end; flex-direction: row-reverse; }
+    .avatar { flex: 0 0 30px; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px; background: #292e3b; color: #aeb6c8; font-size: 11px; font-weight: 700; }
+    .message.assistant .avatar { background: #29243f; color: #b7adff; }
+    .bubble { min-width: 0; padding: 11px 14px; border: 1px solid #303644; border-radius: 4px 14px 14px; background: #202531; color: #e8ebf3; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+    .message.user .bubble { border-color: #514993; border-radius: 14px 4px 14px 14px; background: #373253; }
+    .bubble pre { margin: 0; white-space: pre-wrap; font: inherit; }
+    .bubble .model { margin-top: 8px; color: #8f98aa; font-size: 10px; }
+    .composer { padding: 16px 24px 20px; border-top: 1px solid #292e3b; }
+    .composer-box { display: flex; align-items: flex-end; gap: 10px; padding: 10px; border: 1px solid #343a49; border-radius: 13px; background: #1c212c; }
+    textarea { min-height: 42px; max-height: 140px; resize: vertical; padding: 11px 8px; border: 0; background: transparent; font-size: 13px; line-height: 1.5; }
+    textarea:focus { border: 0; box-shadow: none; }
+    button { flex: 0 0 auto; height: 40px; padding: 0 17px; border: 0; border-radius: 9px; background: #8b7fff; color: #14131d; cursor: pointer; font-size: 12px; font-weight: 700; }
+    button:hover { background: #a198ff; }
+    button:disabled { cursor: wait; opacity: .6; }
+    .hint { margin: 9px 2px 0; color: #747d90; font-size: 10px; }
+    .error-note { color: #ff9a9f; }
+    @media (max-width: 720px) {
+      body { padding: 0; }
+      .app { width: 100%; height: 100vh; min-height: 480px; border: 0; border-radius: 0; }
+      header { padding: 16px; }
+      .settings { grid-template-columns: 1fr 1fr; padding: 12px 16px; }
+      main { padding: 18px 16px; }
+      .composer { padding: 12px 16px 16px; }
+      .message { max-width: 96%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="mark" aria-hidden="true">M</div>
+        <div>
+          <h1>Minova AI</h1>
+          <p class="subtitle">Coding assistant · local API</p>
+        </div>
+      </div>
+      <div class="status" role="status"><span class="dot" id="status-dot"></span><span id="status-text">Checking API…</span></div>
+    </header>
+
+    <section class="settings" aria-label="Chat settings">
+      <label>API key
+        <input id="api-key" type="password" placeholder="Paste your .env API_KEY" autocomplete="off">
+      </label>
+      <label>Language
+        <select id="language">
+          <option value="python">Python</option><option value="javascript">JavaScript</option>
+          <option value="typescript">TypeScript</option><option value="java">Java</option>
+          <option value="c">C</option><option value="cpp">C++</option><option value="go">Go</option>
+          <option value="rust">Rust</option><option value="html">HTML</option><option value="css">CSS</option>
+          <option value="sql">SQL</option>
+        </select>
+      </label>
+      <label>Task
+        <select id="task-type">
+          <option value="code_generation">Generate code</option><option value="debugging">Debug code</option>
+          <option value="code_explanation">Explain code</option><option value="unit_test_generation">Generate tests</option>
+        </select>
+      </label>
+      <label>Max tokens
+        <input id="max-tokens" type="number" min="1" max="1024" value="256">
+      </label>
+    </section>
+
+    <main id="chat" aria-live="polite">
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon" aria-hidden="true">✦</div>
+        <h2>What are we coding today?</h2>
+        <p>Enter your API key, choose a language, and send a prompt to test your local Minova API.</p>
+      </div>
+      <div class="messages" id="messages"></div>
+    </main>
+
+    <form class="composer" id="chat-form">
+      <div class="composer-box">
+        <textarea id="prompt" rows="1" placeholder="Ask Minova to write, explain, or debug code…" aria-label="Your message" required></textarea>
+        <button id="send" type="submit">Send</button>
+      </div>
+      <p class="hint" id="hint">Enter to send · Shift + Enter for a new line. Your API key stays in this page and is not saved.</p>
+    </form>
+  </div>
+  <script>
+    const form = document.getElementById("chat-form");
+    const promptInput = document.getElementById("prompt");
+    const messages = document.getElementById("messages");
+    const welcome = document.getElementById("welcome");
+    const sendButton = document.getElementById("send");
+    const hint = document.getElementById("hint");
+    const statusDot = document.getElementById("status-dot");
+    const statusText = document.getElementById("status-text");
+
+    function setStatus(state, text) {
+      statusDot.className = `dot ${state}`;
+      statusText.textContent = text;
+    }
+
+    function addMessage(role, text, model) {
+      welcome.hidden = true;
+      const row = document.createElement("div");
+      row.className = `message ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "YOU" : "AI";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      const content = document.createElement("pre");
+      content.textContent = text;
+      bubble.append(content);
+      if (model) {
+        const label = document.createElement("div");
+        label.className = "model";
+        label.textContent = model;
+        bubble.append(label);
+      }
+      row.append(avatar, bubble);
+      messages.append(row);
+      document.getElementById("chat").scrollTop = document.getElementById("chat").scrollHeight;
+      return row;
+    }
+
+    async function checkHealth() {
+      try {
+        const response = await fetch("/health");
+        if (!response.ok) throw new Error(`API returned HTTP ${response.status}`);
+        const data = await response.json();
+        setStatus("ready", `API ready · ${data.model}`);
+      } catch (error) {
+        setStatus("error", "API not reachable");
+        hint.textContent = `${error.message}. Make sure the API server is running.`;
+        hint.classList.add("error-note");
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const prompt = promptInput.value.trim();
+      const apiKey = document.getElementById("api-key").value.trim();
+      if (!prompt) return;
+      if (!apiKey) {
+        hint.textContent = "Enter the API_KEY from your .env file before sending.";
+        hint.classList.add("error-note");
+        document.getElementById("api-key").focus();
+        return;
+      }
+
+      hint.textContent = "Waiting for the model…";
+      hint.classList.remove("error-note");
+      addMessage("user", prompt);
+      promptInput.value = "";
+      sendButton.disabled = true;
+      const pending = addMessage("assistant", "Thinking…");
+
+      try {
+        const response = await fetch("/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            prompt,
+            language: document.getElementById("language").value,
+            task_type: document.getElementById("task-type").value,
+            max_new_tokens: Number(document.getElementById("max-tokens").value)
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          const detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || data);
+          throw new Error(`HTTP ${response.status}: ${detail}`);
+        }
+        pending.remove();
+        addMessage("assistant", data.completion || "(The model returned an empty completion.)", data.model);
+        hint.textContent = "Enter to send · Shift + Enter for a new line.";
+      } catch (error) {
+        pending.remove();
+        addMessage("assistant", `Request failed: ${error.message}`);
+        hint.textContent = "Check that the server is ready and the API key is correct, then try again.";
+        hint.classList.add("error-note");
+      } finally {
+        sendButton.disabled = false;
+        promptInput.focus();
+      }
+    });
+
+    promptInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    checkHealth();
+  </script>
+</body>
+</html>

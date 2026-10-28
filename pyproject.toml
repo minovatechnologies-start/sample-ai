@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "minova-coding-ai"
+version = "0.1.0"
+description = "A license-aware coding dataset, SFT, evaluation, and inference scaffold."
+requires-python = ">=3.10"
+
+[project.scripts]
+minova-prepare = "minova_ai.data_pipeline:main"
+minova-train = "minova_ai.train:main"
+minova-pipeline = "minova_ai.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+minova_ai = ["static/*.html"]
