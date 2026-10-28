@@ -16,6 +16,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from minova_ai.policy import require_model_license_review
 
+# Load optional local-development settings without overriding deployment environment variables.
 load_dotenv()
 
 
@@ -49,12 +50,19 @@ def _load_model() -> tuple[Any, Any, str]:
     return model, tokenizer, model_id
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+def _load_api_key() -> str:
     api_key = os.getenv("API_KEY", "").strip()
     if not api_key:
-        raise RuntimeError("API_KEY is required before starting the inference server.")
-    app.state.api_key = api_key
+        raise RuntimeError(
+            "API_KEY is missing. Set it in the environment or in a local .env file "
+            "before starting the inference server."
+        )
+    return api_key
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.api_key = _load_api_key()
     app.state.model, app.state.tokenizer, app.state.model_id = _load_model()
     yield
     app.state.model = None
