@@ -63,7 +63,19 @@ def _load_api_key() -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.api_key = _load_api_key()
-    app.state.model, app.state.tokenizer, app.state.model_id = _load_model()
+    app.state.model = None
+    app.state.tokenizer = None
+    app.state.model_id = None
+    app.state.model_error = None
+
+    adapter_path = os.getenv("ADAPTER_PATH", "").strip()
+    if adapter_path and os.path.isdir(adapter_path):
+        app.state.model, app.state.tokenizer, app.state.model_id = _load_model()
+    else:
+        app.state.model_error = (
+            "Model adapter is unavailable. Set ADAPTER_PATH to a trained PEFT adapter directory."
+        )
+
     yield
     app.state.model = None
     app.state.tokenizer = None
@@ -86,17 +98,29 @@ def _authenticate(request: Request, authorization: str | None = Header(default=N
 
 @app.get("/health")
 def health(request: Request) -> dict[str, str]:
-    return {"status": "ok", "model": getattr(request.app.state, "model_id", "not_loaded")}
+    if request.app.state.model is None:
+        return {
+            "status": "degraded",
+            "model": "not_loaded",
+            "detail": request.app.state.model_error,
+        }
+    return {"status": "ok", "model": request.app.state.model_id}
 
 
 @app.post("/generate", response_model=GenerateResponse, dependencies=[Depends(_authenticate)])
 def generate(payload: GenerateRequest, request: Request) -> GenerateResponse:
+    tokenizer = request.app.state.tokenizer
+    model = request.app.state.model
+    if model is None or tokenizer is None:
+        raise HTTPException(
+            status_code=503,
+            detail=request.app.state.model_error or "Model is not loaded.",
+        )
+
     prompt = (
         f"Task: {payload.task_type}\nLanguage: {payload.language}\n"
         f"Instruction:\n{payload.prompt}\nResponse:\n"
     )
-    tokenizer = request.app.state.tokenizer
-    model = request.app.state.model
     inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
     with torch.inference_mode():
         output = model.generate(

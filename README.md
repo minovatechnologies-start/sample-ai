@@ -118,7 +118,7 @@ python -m minova_ai.cli --language python --source path\to\program.py --tests pa
 
 ## 5. Serve the model
 
-Set a fresh high-entropy `API_KEY` in `.env` (do not commit `.env`). The API refuses to start without one. It loads the model on startup, so model weights and the adapter must already be accessible. This API is a development scaffold; put it behind TLS, a rate limiter, and an authenticated gateway before exposure outside a trusted network.
+Set a fresh high-entropy `API_KEY` in `.env` (do not commit `.env`). The API refuses to start without one. When the adapter directory is available, the model loads on startup. If `ADAPTER_PATH` is missing or unavailable, the service starts in a degraded state: `/health` reports `degraded` and `/generate` returns HTTP 503 until the adapter is made available and the service is restarted. This API is a development scaffold; put it behind TLS, a rate limiter, and an authenticated gateway before exposure outside a trusted network.
 
 ```powershell
 uvicorn minova_ai.api:app --host 127.0.0.1 --port 8000
