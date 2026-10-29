@@ -18,7 +18,7 @@ Use Python 3.10 or newer. From PowerShell in the project root:
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r src/minova_ai/requirements.txt
+pip install -r requirements.txt
 pip install -e .
 Copy-Item .env.example .env
 ```
