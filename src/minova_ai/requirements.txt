@@ -1,0 +1,10 @@
+accelerate>=1.0,<2
+datasets>=3.0,<5
+fastapi>=0.115,<1
+peft>=0.13,<1
+pydantic>=2.9,<3
+python-dotenv>=1.0,<2
+torch>=2.4,<3
+tree-sitter-language-pack>=1.10,<2
+transformers>=4.46,<5
+uvicorn[standard]>=0.32,<1
