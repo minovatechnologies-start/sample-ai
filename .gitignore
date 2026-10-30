@@ -5,5 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 data/processed/
-models/v1/adapter/
+models/v1/adapter/*
+!models/v1/adapter/adapter_config.json
+!models/v1/adapter/adapter_model.safetensors
 monitoring/evaluation.json
