@@ -19,6 +19,8 @@ from minova_ai.policy import require_model_license_review
 # Load optional local-development settings without overriding deployment environment variables.
 load_dotenv()
 
+DEFAULT_ADAPTER_PATH = Path(__file__).resolve().parents[2] / "models" / "v1" / "adapter"
+
 
 class GenerateRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=12_000)
@@ -37,10 +39,15 @@ class GenerateResponse(BaseModel):
     model: str
 
 
+def _adapter_path() -> Path:
+    configured_path = os.getenv("ADAPTER_PATH", "").strip()
+    return Path(configured_path).expanduser() if configured_path else DEFAULT_ADAPTER_PATH
+
+
 def _load_model() -> tuple[Any, Any, str]:
     model_id = require_model_license_review()
-    adapter_path = os.getenv("ADAPTER_PATH", "").strip()
-    if not adapter_path or not os.path.isdir(adapter_path):
+    adapter_path = _adapter_path()
+    if not adapter_path.is_dir():
         raise FileNotFoundError("ADAPTER_PATH must point to a trained PEFT adapter directory.")
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     model_options = {"device_map": "auto"} if torch.cuda.is_available() else {}
@@ -68,12 +75,12 @@ async def lifespan(app: FastAPI):
     app.state.model_id = None
     app.state.model_error = None
 
-    adapter_path = os.getenv("ADAPTER_PATH", "").strip()
-    if adapter_path and os.path.isdir(adapter_path):
+    if _adapter_path().is_dir():
         app.state.model, app.state.tokenizer, app.state.model_id = _load_model()
     else:
         app.state.model_error = (
-            "Model adapter is unavailable. Set ADAPTER_PATH to a trained PEFT adapter directory."
+            "Model adapter is unavailable. Set ADAPTER_PATH to a trained PEFT adapter directory "
+            f"(default: {DEFAULT_ADAPTER_PATH})."
         )
 
     yield
